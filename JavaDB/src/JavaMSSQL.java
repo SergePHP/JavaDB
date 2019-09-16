@@ -9,8 +9,6 @@ import javax.swing.border.BevelBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
-
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import javax.swing.JButton;
 import javax.swing.JScrollPane;
@@ -18,7 +16,6 @@ import javax.swing.JPanel;
 import javax.swing.BoxLayout;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import com.microsoft.sqlserver.jdbc.*;   
 import java.sql.*;
 import java.util.Vector;
 import java.awt.event.ActionListener;
@@ -33,12 +30,14 @@ public class JavaMSSQL {
 	private JTable parentTable;
 	private JTable childTable;
 	private JLabel statusLabel;
-	private String connectionUrl = "jdbc:sqlserver://srv-plm-01;" + "user=infodba;password=infodba";
-	
 	private Connection con = null;       
 	private Statement stmt = null;          
 	private ResultSet rs = null;
 	private JPanel statusBarPanel;
+	private String connectionUrl = "jdbc:sqlserver://srv-plm-01;" + "user=infodba;password=infodba";
+	private String[] parentTableHeader = {"ID Категории", "Наименование категории"};
+	private String[] childTableHeader = {"ID Книги", "Наименование книги", "Автор"};
+	
 
 	/**
 	 * Launch the application.
@@ -110,7 +109,7 @@ public class JavaMSSQL {
 		JButton btnConnect = new JButton("Подключиться");
 		btnConnect.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				connectToDB();
+				getParentValues();
 			}
 		});
 		upPanel.add(btnConnect);
@@ -122,7 +121,7 @@ public class JavaMSSQL {
 		JScrollPane scrollPane = new JScrollPane();
 		tablesPanel.add(scrollPane);
 
-		String[] parentTableHeader = {"ID Категории", "Наименование категории"};	
+
 		DefaultTableModel parentTableModel = new DefaultTableModel(parentTableHeader, 0) {
 		    public boolean isCellEditable(int row, int column) {
 		        return false;
@@ -145,7 +144,6 @@ public class JavaMSSQL {
 		JScrollPane scrollPane_1 = new JScrollPane();
 		tablesPanel.add(scrollPane_1);
 		
-		String[] childTableHeader = {"ID Книги", "Наименование книги", "Автор"};	
 		DefaultTableModel childTableModel = new DefaultTableModel(childTableHeader, 0) {
 		    public boolean isCellEditable(int row, int column) {
 		        return false;
@@ -167,56 +165,53 @@ public class JavaMSSQL {
 		statusBarPanel.add(statusLabel);
 		frame.getContentPane().add(statusBarPanel, BorderLayout.SOUTH);
 	}
-
 	private void connectToDB() {
 		
-		String SQL = "SELECT * FROM testDB.dbo.Category";
 		statusLabel.setText("Выполняю подключение к базе... ");
-		
 		try {
 			con = DriverManager.getConnection(connectionUrl);
 			stmt = con.createStatement();
-			rs = stmt.executeQuery(SQL);
 			
-		    statusLabel.setText(statusLabel.getText() + "Готово");
-		    
-			DefaultTableModel tableModel = (DefaultTableModel) parentTable.getModel(); 
-			tableModel.setRowCount(0);
-			
-		    while (rs.next()) {
-		    	Vector<String> row = new Vector<>();
-		    	row.add(Integer.valueOf(rs.getInt("category_id")).toString());
-		    	row.add(rs.getString("category_name"));
-
-		    	tableModel.addRow(row);
-		    }
-
+			statusLabel.setText(statusLabel.getText() + "Готово");
 		} catch (Exception e) {
 			statusLabel.setText(e.getMessage());
-		} 
+		}
+	}
+
+	private void getParentValues() {
+		
+		String SQL = "SELECT * FROM testDB.dbo.Category";
+
+		connectToDB();
+		
+		if(con != null || stmt != null) {
+			
+			try {
+				rs = stmt.executeQuery(SQL);
+
+				DefaultTableModel tableModel = (DefaultTableModel) parentTable.getModel(); 
+				tableModel.setRowCount(0);
+				
+			    while (rs.next()) {
+			    	Vector<String> row = new Vector<>();
+			    	row.add(Integer.valueOf(rs.getInt("category_id")).toString());
+			    	row.add(rs.getString("category_name"));
+
+			    	tableModel.addRow(row);
+			    }
+			} catch (Exception e) {
+				statusLabel.setText(e.getMessage());
+			} 
+		}
 	}
 
 	private void getChildValues() {
 		
 		int idCat = Integer.valueOf(parentTable.getValueAt(parentTable.getSelectedRow(), 0).toString());
-		
 		String SQL = "SELECT book_id, book_name, author FROM testDB.dbo.Books WHERE category_id='" + idCat + "'";
 		
-		if(con == null || stmt == null) {
-			
-			statusLabel.setText("Выполняю переподключение к базе... ");
-			
-			try {
-				con = DriverManager.getConnection(connectionUrl);
-				stmt = con.createStatement();
-				
-			    statusLabel.setText(statusLabel.getText() + "Готово");
-			} catch (SQLException e) {
-				statusLabel.setText(e.getMessage());
-			}
-		}
 		try {
-			
+
 			statusLabel.setText("Получаю данные, ID категории: " + idCat);
 			
 			rs = stmt.executeQuery(SQL);
