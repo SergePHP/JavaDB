@@ -1,3 +1,4 @@
+package bases;
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
@@ -34,7 +35,9 @@ public class JavaMSSQL {
 	private Statement stmt = null;          
 	private ResultSet rs = null;
 	private JPanel statusBarPanel;
-	private String connectionUrl = "jdbc:sqlserver://srv-plm-01;" + "user=infodba;password=infodba";
+	private String connectionUrl = "jdbc:sqlserver://srv-plm-01:1433";
+    private String login = "infodba";
+    private String password = "infodba";
 	private String[] parentTableHeader = {"ID Категории", "Наименование категории"};
 	private String[] childTableHeader = {"ID Книги", "Наименование книги", "Автор"};
 	
@@ -169,7 +172,7 @@ public class JavaMSSQL {
 		
 		statusLabel.setText("Выполняю подключение к базе... ");
 		try {
-			con = DriverManager.getConnection(connectionUrl);
+			con = DriverManager.getConnection(connectionUrl, login, password);
 			stmt = con.createStatement();
 			
 			statusLabel.setText(statusLabel.getText() + "Готово");
