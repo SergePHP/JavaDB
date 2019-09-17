@@ -1,6 +1,6 @@
 package bases;
-import java.awt.EventQueue;
 
+import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTable;
@@ -35,9 +35,16 @@ public class JavaMSSQL {
 	private Statement stmt = null;          
 	private ResultSet rs = null;
 	private JPanel statusBarPanel;
+	/*
+	 * ссылка для соединения с базой данных MSSQL,
+	 * логин и пароль
+	 */
 	private String connectionUrl = "jdbc:sqlserver://srv-plm-01:1433";
     private String login = "infodba";
     private String password = "infodba";
+    /*
+     * Заголовки таблиц
+     */
 	private String[] parentTableHeader = {"ID Категории", "Наименование категории"};
 	private String[] childTableHeader = {"ID Книги", "Наименование книги", "Автор"};
 	
@@ -72,11 +79,20 @@ public class JavaMSSQL {
 		frame = new JFrame();
 		frame.setBounds(100, 100, 724, 864);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		/*
+		 * Пользовательский обработчик
+		 * события закрытия окна
+		 */
 		frame.addWindowListener(new WindowAdapter()
         {
             @Override
             public void windowClosing(WindowEvent e)
             {
+            	/*
+            	 * Если соединение было установлено,
+            	 * то освобождаются задействованные
+            	 * ресурсы и закрывается соединение
+            	 */
     		    statusLabel.setText("Закрываю соединение...");
     		    
 				if (rs != null) 
@@ -110,6 +126,9 @@ public class JavaMSSQL {
 		frame.getContentPane().add(upPanel, BorderLayout.NORTH);
 		
 		JButton btnConnect = new JButton("Подключиться");
+		/*
+		 * Обработчик события нажатия кнопки "Подключить"
+		 */
 		btnConnect.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				getParentValues();
@@ -123,8 +142,10 @@ public class JavaMSSQL {
 		
 		JScrollPane scrollPane = new JScrollPane();
 		tablesPanel.add(scrollPane);
-
-
+		/*
+		 * Отключаю возможность редактирования 
+		 * таблицы из интерфейса 
+		 */
 		DefaultTableModel parentTableModel = new DefaultTableModel(parentTableHeader, 0) {
 		    public boolean isCellEditable(int row, int column) {
 		        return false;
@@ -135,7 +156,9 @@ public class JavaMSSQL {
 		parentTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		parentTable.getColumnModel().getColumn(0).setPreferredWidth(100);
 		parentTable.getColumnModel().getColumn(0).setMaxWidth(100);
-		
+		/*
+		 * Обработчик события выбора ячейки в таблице
+		 */
 		parentTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
 	        public void valueChanged(ListSelectionEvent event) {
 	        	getChildValues();
@@ -146,7 +169,10 @@ public class JavaMSSQL {
 		
 		JScrollPane scrollPane_1 = new JScrollPane();
 		tablesPanel.add(scrollPane_1);
-		
+		/*
+		 * Отключаю возможность редактирования 
+		 * таблицы из интерфейса 
+		 */
 		DefaultTableModel childTableModel = new DefaultTableModel(childTableHeader, 0) {
 		    public boolean isCellEditable(int row, int column) {
 		        return false;
@@ -157,7 +183,9 @@ public class JavaMSSQL {
 		childTable.getColumnModel().getColumn(0).setPreferredWidth(100);
 		childTable.getColumnModel().getColumn(0).setMaxWidth(100);
 		scrollPane_1.setViewportView(childTable);
-		
+		/*
+		 * Формирую строку состояния
+		 */
 		statusBarPanel = new JPanel();
 		statusBarPanel.setBorder(new BevelBorder(BevelBorder.LOWERED));
 		statusBarPanel.setPreferredSize(new Dimension(frame.getWidth(), 24));
@@ -168,25 +196,49 @@ public class JavaMSSQL {
 		statusBarPanel.add(statusLabel);
 		frame.getContentPane().add(statusBarPanel, BorderLayout.SOUTH);
 	}
+	/*
+	 * Метод выполняет подключение к базе данных
+	 */
 	private void connectToDB() {
 		
 		statusLabel.setText("Выполняю подключение к базе... ");
 		try {
+			/*
+			 * Пытаюсь подключиться к базе, 
+			 * используя адрес, логин и пароль
+			 */
 			con = DriverManager.getConnection(connectionUrl, login, password);
+			/*
+			 * Создаю объект, для отправки SQL инструкций
+			 * в базу данных
+			 */
 			stmt = con.createStatement();
 			
 			statusLabel.setText(statusLabel.getText() + "Готово");
 		} catch (Exception e) {
+			/*
+			 * Сообщение исключения вывожу в строку состояния
+			 */
 			statusLabel.setText(e.getMessage());
 		}
 	}
-
+	/*
+	 * Метод получает все строки родительской таблицы
+	 */
 	private void getParentValues() {
-		
-		String SQL = "SELECT * FROM testDB.dbo.Category";
-
+		/*
+		 * SQL инструкция для получения
+		 * данных родительской таблицы
+		 */
+		String SQL = "SELECT * FROM javaDB.dbo.Category";
+		/*
+		 * Подключаюсь к базе
+		 */
 		connectToDB();
-		
+		/*
+		 * Если подключение удалось, выполняю
+		 * SQL инструкцию и заполняю таблицу данными
+		 */
 		if(con != null || stmt != null) {
 			
 			try {
@@ -203,19 +255,35 @@ public class JavaMSSQL {
 			    	tableModel.addRow(row);
 			    }
 			} catch (Exception e) {
+				/*
+				 * Сообщение исключения вывожу в строку состояния
+				 */
 				statusLabel.setText(e.getMessage());
 			} 
 		}
 	}
-
+	/*
+	 * Метод получает строки дочерней таблицы,
+	 * связанные с родительской таблицей
+	 */
 	private void getChildValues() {
-		
+		/*
+		 * Получаю значение первичного
+		 * ключа из выбранной строки
+		 */
 		int idCat = Integer.valueOf(parentTable.getValueAt(parentTable.getSelectedRow(), 0).toString());
-		String SQL = "SELECT book_id, book_name, author FROM testDB.dbo.Books WHERE category_id='" + idCat + "'";
-		
+		/*
+		 * Формирую SQL инструкцию для выборки строк из дочерней таблицы,
+		 * в которой внешний ключ задан первичным ключом выбранной строки 
+		 */
+		String SQL = "SELECT book_id, book_name, author FROM javaDB.dbo.Books WHERE category_id='" + idCat + "'";
+		/*
+		 * На данном этапе подключение к базе уже установлено,
+		 * выполняю SQL инструкцию и заполняю таблицу данными
+		 */
 		try {
 
-			statusLabel.setText("Получаю данные, ID категории: " + idCat);
+			statusLabel.setText("Данные получены, ID категории: " + idCat);
 			
 			rs = stmt.executeQuery(SQL);
 			
@@ -232,6 +300,9 @@ public class JavaMSSQL {
 		    }
 			
 		} catch (SQLException e) {
+			/*
+			 * Сообщение исключения вывожу в строку состояния
+			 */
 			statusLabel.setText(e.getMessage());
 		}
 	}
