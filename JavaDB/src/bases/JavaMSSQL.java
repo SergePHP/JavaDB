@@ -41,7 +41,7 @@ public class JavaMSSQL {
 	 */
 	private String connectionUrl = "jdbc:sqlserver://srv-plm-01:1433";
     private String login = "infodba";
-    private String password = "infodba";
+    private String password = "testdb";
     /*
      * Заголовки таблиц
      */
